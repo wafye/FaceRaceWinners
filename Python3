@@ -1,0 +1,13 @@
+Steps to install python3 on MacOSX
+
+xcode-select --install
+ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+brew doctor
+
+brew install python3
+brew install gcc
+sudo pip3 install -U numpy scipy matplotlib scikit-learn scikit-image
+brew install opencv3 --with-python3
+ln -s /usr/local/opt/opencv3/lib/python3.5/site-packages/cv2.cpython-35m-darwin.so /usr/local/lib/python3.5/site-packages/
+
+And you should be done!
