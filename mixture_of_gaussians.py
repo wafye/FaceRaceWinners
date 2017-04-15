@@ -17,56 +17,57 @@ copyright::
 import cv2
 import numpy as np
 
-def background_segmentation(frame, btype='AMOG', verbose=False):
+def background_segmentation(capture, btype='AMOG', verbose=False):
 
-	dimensions = frame.shape
-	height = dimensions[0]
-	width = dimensions[1]
-	if len(dimensions) == 3:
-		channels = dimensions[2]
-	else:
-		channels = 1
-	dtype = frame.dtype
-
-	morphKernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE(3,3))
-
+	width, height, framerate = int(capture.get(3)), int(capture.get(4)), \
+										int(capture.get(5))
 	longedge = np.max((width,height))
-	if longedge > 500:
-		scaleFactor = 500//longedge
-		frameSize = (width*scaleFactor, height*scaleFactor)
+	if longedge > 1024:
+		scaleFactor = 1024/longedge
+		frameSize = (np.uint8(width*scaleFactor), np.uint8(height*scaleFactor))
 	else:
 		scaleFactor = 1
 		frameSize = (width,height)
 
-	frame = cv2.resize(frame, dsize=frameSize, fx=0, fy=0)
+	morphKernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (11,11))
 
 	if btype == 'AMOG':
 		fgbg = cv2.createBackgroundSubtractorMOG2(detectShadows=False)
 
-	elif btype == 'MOG':
-		fgbg = cv2.BackgroundSubtractorMOG()
+	while capture.isOpened():
+		retrived, frame = capture.read()		#Read in the video frame
+		if retrived == False:
+			print("You have reached the end of the video.")
+			break
+		
+		frame = cv2.resize(frame, dsize=(0,0), 
+							fx=scaleFactor, fy=scaleFactor)
 
-	elif btype == 'GMG':
-		fgbg = cv2.createBackgroundSubtractorGMG()
+		if verbose:
+			cv2.imshow("Original Frame", frame)
+		
+		gray = np.float64(cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY))
+		threshold = fgbg.apply(gray)
+		threshold = cv2.morphologyEx(threshold, cv2.MORPH_CLOSE, morphKernel)
 	
-	gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-	gray = gray.astype(np.float64)
+		if verbose:
+			cv2.imshow("Threshold Mask", threshold)
 
-	threshold = fgbg.apply(gray)
-	threshold = cv2.morphologyEX(threshold,
-									cv2.MORPH_CLOSE, morphKernel)
-	
-	if verbose:
-		viewMask = fgbg.apply(frame)
-		viewMask = cv2.morphologyEX(viewMask,
-									cv2.MORPH_CLOSE, morphKernel)
-		cv2.imshow("Threshold Mask", viewMask)
+		threshold[threshold>0] = 1
+		maskedFrame = np.uint8(threshold*gray)
 
-	threshold[threshold>0] = 1
+		if verbose:
+			threshold = np.repeat(threshold[:,:,np.newaxis],
+										repeats=3, axis=2)
+			maskedFrame = np.uint8(threshold*frame)
+			cv2.imshow("Masked Frame", maskedFrame)
 
-	threshold.astype(dtype)
+		k = cv2.waitKey(framerate)
+		if k == 27 or k == (65536 + 27):
+			print('Exiting...')
+			break
 
-	return threshold
+	return np.uint8(threshold)
 
 if __name__ == '__main__':
 	import cv2
@@ -75,31 +76,20 @@ if __name__ == '__main__':
 
 	currentDir = os.getcwd()
 
-	testIm = currentDir + '/testImages/lenna.tif'
-	testIm = currentDir + '/testImages/lenna_color.tif'
+	testVid = currentDir + '/testVideo/FunnyTestVideo.mp4'
 
-	im = cv2.imread(testIm, cv2.IMREAD_UNCHANGED)
+	capture = cv2.VideoCapture(testVid)
+	if capture.isOpened() == False:
+		msg = "The provided video file was not opened."
+		raise ValueError(msg)
+
+	framerate =	np.uint8(capture.get(5))
 
 	verbose = True
 	btype = 'AMOG'
+	print("Press Esc to quit the video stream")
 
-	startTime = time.process_time()
-	threshold = background_segmentation(im, btype, verbose)
-	endTime = time.process_time()
-	print("It took {0}[s] to complete the background segmentation" \
-			+ "operation".format(endTime-startTime))
+	threshold = background_segmentation(capture, btype, verbose)
 
-	if verbose:
-		delay = 100
-		while True:
-			k = cv2.waitKey(delay)
-
-			if k == 27 or k == (65536 + 27):
-				action = 'exit'
-				print('Exiting...')
-				break
-			if k == 99 or k == (65536+99) or k == 67 or k == (65536+67):
-				action = 'continue'
-				print('Continuing...')
-				break
-		cv2.destroyAllWindows()
+	capture.release()
+	cv2.destroyAllWindows()
