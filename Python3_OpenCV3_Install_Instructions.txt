@@ -1,0 +1,42 @@
+﻿Steps to install python3 on MacOSX
+
+xcode-select --install
+ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+brew doctor
+
+brew install python3
+brew install gcc
+sudo pip3 install -U numpy scipy matplotlib scikit-learn scikit-image
+brew install opencv3 --with-python3
+ln -s /usr/local/opt/opencv3/lib/python3.5/site-packages/cv2.cpython-35m-darwin.so /usr/local/lib/python3.5/site-packages/
+
+And you should be done!
+
+Steps to install python3 on Windows 10
+Navigate to this page on your favorite web browser: https://www.python.org/downloads/release/python-361/
+Download and execute thhis installer: Windows x86-64 executable installer
+Start the installer and select Customize installation. On the next screen leave all the optional features checked. 
+Finally, on the Advanced Options screen make sure to check Install for all users
+Add Python to environment variables and Precompile standard library
+Optionally, you can customize the install location. I’ve used C:\Program Files\
+
+Once installed, feel free to check your paths by opening up a command prompt and typing "python"
+	You can open a command prompt by going to windows search (Windows Key) and typing "CMD"
+
+Next download the Microsoft Visual C++ 2015 Tools from: https://www.microsoft.com/en-us/download/details.aspx?id=53587
+Be sure to select the appropriate version, in this case the vc_redist.x86.exe installer.
+
+Next download numpy wheel (whl) for the appropriate version, in this case the numpy‑1.12.1+mkl‑cp36‑cp36m‑win_amd64.whl
+After that download the openCV wheel for the approprate version, opencv_python‑3.2.0+contrib‑cp36‑cp36m‑win_amd64.whl
+I wasn't sure if we needed the contrib version but I chose it just in case.
+
+After both of the wheels have finished downloading we need to install them using pip.
+Open an ADMINISTRATOR Command Prompt and navigate to your downloads directory. (cd \Users\youraccount\Downloads)
+
+Then first run
+pip install numpy‑1.12.1+mkl‑cp36‑cp36m‑win_amd64.whl
+
+After it completes run
+pip install opencv_python‑3.2.0+contrib‑cp36‑cp36m‑win_amd64.whl
+
+Restart the command prompt and you should have opencv3 and python3 running on your windows machine!
