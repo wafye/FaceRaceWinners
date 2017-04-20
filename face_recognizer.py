@@ -72,18 +72,18 @@ for image_path in image_paths:
     predict_image = np.array(predict_image_pil, 'uint8')
     faces = faceCascade.detectMultiScale(predict_image)
     for (x, y, w, h) in faces:
-    	if cv2.__version__ > "3.1.0":
-             collector = cv2.face.StandardCollector_create()
-             result = collector.getMinDist()
-             recognizer.predict_collect(predict_image[y: y + h, x: x + w], collector)
-             nbr_predicted = collector.getMinLabel()
-             conf = collector.getMinDist()
+        if cv2.__version__ > "3.1.0":
+            collector = cv2.face.StandardCollector_create()
+            result = collector.getMinDist()
+            recognizer.predict_collect(predict_image[y: y + h, x: x + w], collector)
+            nbr_predicted = collector.getMinLabel()
+            conf = collector.getMinDist()
         else:
-             result = cv2.face.MinDistancePredictCollector()
-             recognizer.predict(predict_image[y: y + h, x: x + w],result, 0)
-             nbr_predicted = result.getLabel()
-             conf = result.getDist()
-             
+            result = cv2.face.MinDistancePredictCollector()
+            recognizer.predict(predict_image[y: y + h, x: x + w],result, 0)
+            nbr_predicted = result.getLabel()
+            conf = result.getDist()
+
         nbr_actual = int(os.path.split(image_path)[1].split(".")[0].replace("subject", ""))
         if nbr_actual == nbr_predicted:
             print("{} is Correctly Recognized with confidence {}".format(nbr_actual, conf))
