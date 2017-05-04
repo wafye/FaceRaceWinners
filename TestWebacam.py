@@ -2,7 +2,7 @@ import numpy as np
 import cv2
 
 cap = cv2.VideoCapture(0)
-face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
+face_cascade = cv2.CascadeClassifier('./FaceRecognitionModels/haarcascade_frontalface_default.xml')
 
 while(True):
     # Capture frame-by-frame
