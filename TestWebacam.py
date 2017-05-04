@@ -31,8 +31,12 @@ while(True):
 
             cv2.imshow("Haar Cascade Box", faceBoxFrame)
 
-            # eigenbox to scale, must scale down to 92 by 112
+            
+            addition = int(h/10)
             box = frame[y-addition:h+y+addition,x:w+x]
+            #print(x, x-w, x+w)
+            #print(x-w)
+            #print(x+w)
             eigenBoxSize = (92, 112)
             cv2.imshow("Facebox", box)
 
