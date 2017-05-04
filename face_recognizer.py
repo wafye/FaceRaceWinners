@@ -6,7 +6,7 @@ import numpy as np
 from PIL import Image
 
 # For face detection we will use the Haar Cascade provided by OpenCV.
-cascadePath = "haarcascade_frontalface_default.xml"
+cascadePath = "./FaceRecognitionModels/haarcascade_frontalface_default.xml"
 faceCascade = cv2.CascadeClassifier(cascadePath)
 
 # For face recognition we will the the LBPH Face Recognizer 

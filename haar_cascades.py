@@ -18,7 +18,7 @@ import numpy as np
 
 def haar_cascades(video,verbose=False):
 	
-	face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
+	face_cascade = cv2.CascadeClassifier('./FaceRecognitionModels/haarcascade_frontalface_default.xml')
 
 	while video.isOpened():
 
