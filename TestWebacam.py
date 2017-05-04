@@ -4,7 +4,6 @@ import cv2
 cap = cv2.VideoCapture(0)
 face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
 
-
 while(True):
     # Capture frame-by-frame
     ret, frame = cap.read()
@@ -17,7 +16,6 @@ while(True):
 
     # Display the resulting frame
     cv2.imshow('grayframe',gray)
-
 
     # Display the resulting frame
     cv2.imshow('frame',frame)
@@ -32,6 +30,17 @@ while(True):
             faceBoxFrame = cv2.rectangle(frame, (x,y), (x+w, y+h), (0,255,0), 2)
 
             cv2.imshow("Haar Cascade Box", faceBoxFrame)
+            #print(x, x-w, x+w)
+            #print(x-w)
+            #print(x+w)
+            eigenBoxSize = (92, 112)
+            cv2.imshow("Facebox", frame[])
+
+            #centerW, centerH = (x+(w//2), y+(h//2))
+            #print(center)
+            #print(y, y+h, x, x+w)
+            #cv2.imshow("FaceBox", frame[y:y+h, x:x+w])
+            #cv2.imshow("EigenBox", frame[centerH-56:centerH+56, centerW-46:centerW+46])
 
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
