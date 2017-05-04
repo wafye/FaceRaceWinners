@@ -30,11 +30,11 @@ while(True):
             faceBoxFrame = cv2.rectangle(frame, (x,y), (x+w, y+h), (0,255,0), 2)
 
             cv2.imshow("Haar Cascade Box", faceBoxFrame)
-            #print(x, x-w, x+w)
-            #print(x-w)
-            #print(x+w)
+
+            # eigenbox to scale, must scale down to 92 by 112
+            box = frame[y-addition:h+y+addition,x:w+x]
             eigenBoxSize = (92, 112)
-            cv2.imshow("Facebox", frame[])
+            cv2.imshow("Facebox", box)
 
             #centerW, centerH = (x+(w//2), y+(h//2))
             #print(center)
