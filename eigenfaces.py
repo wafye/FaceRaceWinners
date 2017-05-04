@@ -18,8 +18,27 @@ copyright::
 ########################
 # method definition
 ########################
+def add_to_database(path, new_image):
 
-def jack_eigenfaces(database, image, f_t, nf_t):
+	dir_name = input('Enter name:')
+	#if os.path.exists(home + os.path.sep + path + dir_name)== True:
+	if os.path.exists( path + dir_name)== True:
+
+		face_image_name = input('Enter image number:')
+		#new_path = home + os.path.sep + path + dir_name + os.path.sep
+		new_path = path + dir_name + os.path.sep
+
+
+	else:
+		face_image_name = input('Enter image number:')
+		#os.mkdir(home + os.path.sep + path + dir_name)
+		os.mkdir(path + dir_name)
+		new_path = path + dir_name + os.path.sep
+		#new_path = home + os.path.sep + path + dir_name + os.path.sep
+
+	return(new_path, face_image_name)
+
+def eigenfaces(database, image, f_t, nf_t):
 
 	#############################
 	# get faces from the database
@@ -118,7 +137,7 @@ def jack_eigenfaces(database, image, f_t, nf_t):
 		print('\n#### NEW FACE ####\n')
 		home = os.path.expanduser('~')
 		#path = 'src/python/modules/ipcv/face_database/'
-		dst, new_image = add_to_database('./face_database/', image)
+		dst, new_image = add_to_database('face_database/', image)
 		#dst, new_image = ipcv.add_to_database('src/python/modules/ipcv/face_database/', image)
 		cv2.imwrite(dst + new_image +'.jpg', image)
 		# elapsedTime = time.clock() - startTime
@@ -198,4 +217,4 @@ if __name__ == '__main__':
 	nf_t = 15000
 	#nf_t = 10000000000
 
-	eigenface = jack_eigenfaces(database=database, image=image, f_t=f_t, nf_t=nf_t)
+	eigenface = eigenfaces(database=database, image=image, f_t=f_t, nf_t=nf_t)
