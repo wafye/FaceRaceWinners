@@ -1,6 +1,6 @@
 """
 title::
-	eigenfaces.py
+	eigenfaces.py **********WITH DATABASE ADDITION
 description::
 	Face detection and recognition using eigenfaces
 attributes::
@@ -19,7 +19,7 @@ copyright::
 # method definition
 ########################
 
-def eigenfaces(database, image, f_t, nf_t):
+def jack_eigenfaces(database, image, f_t, nf_t):
 
 	#############################
 	# get faces from the database
@@ -116,9 +116,15 @@ def eigenfaces(database, image, f_t, nf_t):
 	# check if the face matches a face in the existing database of faces
 	if min_weight_distance > nf_t:
 		print('\n#### NEW FACE ####\n')
-		elapsedTime = time.clock() - startTime
-		print('Elapsed time = {0} [s]'.format(elapsedTime),'\n')
+		home = os.path.expanduser('~')
+		#path = 'src/python/modules/ipcv/face_database/'
+		dst, new_image = ipcv.add_to_database('src/python/modules/ipcv/face_database/', image)
+		cv2.imwrite(dst + new_image +'.jpg', image)
+		# elapsedTime = time.clock() - startTime
+  #       print('Elapsed time = {0} [s]'.format(elapsedTime),'\n')
 		# at this point, one could optionally add the new face to the database
+        #add_to_database(database, image)
+
 
 	else:
 		print('\n#### MATCH FOUND ####\n')
@@ -166,29 +172,13 @@ if __name__ == '__main__':
 	import time
 
 	home = os.path.expanduser('~')
-	baseDirectory = 'src/python/modules/ipcv/presence_recognition/'
-	database = 'att_faces/'
+	baseDirectory = 'src/python/modules/ipcv/'
+	database = 'face_database/'
+	# path = baseDirectory + database #+ os.path.sep
 	
-
-	# filename_image = home + os.path.sep + baseDirectory + 's10_9.pgm'
-	# filename_image = home + os.path.sep + baseDirectory + 's10_10.pgm'
-	# filename_image = home + os.path.sep + baseDirectory + 's40_1.pgm'
-	filename_image = home + os.path.sep + baseDirectory + 'testImages/s2_8_removed.pgm'
-	# filename_image = home + os.path.sep + baseDirectory + 'lenna_92x112.png'
-	# filename_image = home + os.path.sep + baseDirectory + 'easton_92x112.png'	
-	# filename_image = home + os.path.sep + baseDirectory + 'bart_92x112.png'	
-	# filename_image = home + os.path.sep + baseDirectory + 'house_92x112.png'	
-	# filename_image = home + os.path.sep + baseDirectory + 'turtlepower_92x112.png'
-	# filename_image = home + os.path.sep + baseDirectory + 'carl_92x112.png'
-	# filename_image = home + os.path.sep + baseDirectory + 'landscape2_92x112.png'	
-	# filename_image = home + os.path.sep + baseDirectory + 'smiley_92x112.png'	
-
-	# filename_image = home + os.path.sep + baseDirectory + 'front.png'	
-	# filename_image = home + os.path.sep + baseDirectory + 'up.png'	
-	# filename_image = home + os.path.sep + baseDirectory + 'down.png'	
-	# filename_image = home + os.path.sep + baseDirectory + 'close.png'	
-	# filename_image = home + os.path.sep + baseDirectory + 'far.png'	
-	# filename_image = home + os.path.sep + baseDirectory + 'translate.png'	
+	filename_image = home + os.path.sep + 'src/python/modules/ipcv/eigenface_images/obama.png'
+	path = 'src/python/modules/ipcv/face_database/'
+	#filename_image = home + os.path.sep + 'src/python/modules/ipcv/eigenface_images/mickey.jpg'
 
 
 	image = cv2.imread(filename_image, cv2.IMREAD_GRAYSCALE)
@@ -202,7 +192,7 @@ if __name__ == '__main__':
 	# f_t = 5000
 	f_t = 1000000000
 	# face recognition threhsold
-	# nf_t = 15000
-	nf_t = 10000000000
+	nf_t = 15000
+	#nf_t = 10000000000
 
-	eigenface = eigenfaces(database=database, image=image, f_t=f_t, nf_t=nf_t)
+	eigenface = jack_eigenfaces(database=database, image=image, f_t=f_t, nf_t=nf_t)
