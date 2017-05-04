@@ -118,7 +118,8 @@ def jack_eigenfaces(database, image, f_t, nf_t):
 		print('\n#### NEW FACE ####\n')
 		home = os.path.expanduser('~')
 		#path = 'src/python/modules/ipcv/face_database/'
-		dst, new_image = ipcv.add_to_database('src/python/modules/ipcv/face_database/', image)
+		dst, new_image = ipcv.add_to_database('./face_database/', image)
+		#dst, new_image = ipcv.add_to_database('src/python/modules/ipcv/face_database/', image)
 		cv2.imwrite(dst + new_image +'.jpg', image)
 		# elapsedTime = time.clock() - startTime
   #       print('Elapsed time = {0} [s]'.format(elapsedTime),'\n')
@@ -164,7 +165,7 @@ if __name__ == '__main__':
 
 	import os
 	import sys
-	import ipcv
+	#import ipcv
 	import cv2
 	import numpy as np
 	from skimage.io import imread_collection
@@ -172,12 +173,14 @@ if __name__ == '__main__':
 	import time
 
 	home = os.path.expanduser('~')
-	baseDirectory = 'src/python/modules/ipcv/'
-	database = 'face_database/'
+	#baseDirectory = 'src/python/modules/ipcv/'
+	database = './face_database/'
 	# path = baseDirectory + database #+ os.path.sep
 	
-	filename_image = home + os.path.sep + 'src/python/modules/ipcv/eigenface_images/obama.png'
-	path = 'src/python/modules/ipcv/face_database/'
+	#filename_image = home + os.path.sep + 'src/python/modules/ipcv/eigenface_images/obama.png'
+	#filename_image = './testImages/lenna_color.tif'
+	filename_image = './testImages/obama.png'
+	#path = 'src/python/modules/ipcv/face_database/'
 	#filename_image = home + os.path.sep + 'src/python/modules/ipcv/eigenface_images/mickey.jpg'
 
 
