@@ -23,30 +23,38 @@ copyright::
 ########################
 
 dict_names = {}
-def add_to_database(path, new_image):
+def add_to_database(path, new_image, match_id, max_saved_faces):
 
-    dir_name = input('Enter name:')
+    if match_id != None:
+        # parse the string to get the name of the matched subject
+        id_path = match_id.replace(path,'')[:-6]
+        name = id_path.replace('./','')
+        print('name:', name)
+        dir_name = name
+
+    else:
+    	 dir_name = input('Enter name:')
+
     #dict_names = {}
     #if os.path.exists(home + os.path.sep + path + dir_name)== True:
     if os.path.exists( path + dir_name)== True:
-        face_image_name = len(os.listdir(path+ dir_name)) + 1
-        dict_names[dir_name] = face_image_name
+        face_image_number = len(os.listdir(path+ dir_name)) + 1
+        dict_names[dir_name] = face_image_number
         #new_path = home + os.path.sep + path + dir_name + os.path.sep
         new_path = path + dir_name + os.path.sep
 
     else:
-        face_image_name = input('Enter image number:')
+        # face_image_number = input('Enter image number:')
+        face_image_number = 1
         #os.mkdir(home + os.path.sep + path + dir_name)
         os.mkdir(path + dir_name)
         new_path = path + dir_name + os.path.sep
-        dict_names[dir_name] = face_image_name
+        dict_names[dir_name] = face_image_number
         #new_path = home + os.path.sep + path + dir_name + os.path.sep
 
-    return(new_path, face_image_name)
+    return(new_path, face_image_number)
 
 def eigenfaces(database, image, f_t, nf_t):
-
-    print(image.shape)
 
     #############################
     # get faces from the database
@@ -125,7 +133,7 @@ def eigenfaces(database, image, f_t, nf_t):
     # check if its a face based a face threshold value (f_t) 
     if min_fs_distance > f_t:
         print('\n#### NO FACE DETECTED ####\n')
-        sys.exit()
+        # sys.exit()
     else:
         print('\n#### FACE DETECTED ####\n')
 
@@ -140,13 +148,19 @@ def eigenfaces(database, image, f_t, nf_t):
     ordered_face_list = np.asarray(database_face_list)[w_indx]
     ordered_image_list = np.asarray(database_image_list)[w_indx]
 
+
+    # maximum number of faces to be added to the database per subject
+    ###############
+    max_saved_faces = 10
+    ###############
+
     # check if the face matches a face in the existing database of faces
     if min_weight_distance > nf_t:
         print('\n#### NEW FACE ####\n')
         home = os.path.expanduser('~')
         #path = 'src/python/modules/ipcv/face_database/'
-        dst, new_image = add_to_database('face_database/', image)
-        if len(os.listdir(dst)) < 9:
+        dst, new_image = add_to_database('face_database/', image, match_id=None, max_saved_faces=max_saved_faces)
+        if len(os.listdir(dst)) < max_saved_faces:
             cv2.imwrite(str(dst) + str(new_image) +'.jpg', image)
 
 
@@ -160,33 +174,20 @@ def eigenfaces(database, image, f_t, nf_t):
         #path = 'src/python/modules/ipcv/face_database/'
         # print(ordered_face_list[0])
 
-        dst, new_image = add_to_database('face_database/', image)
-        if len(os.listdir(dst)) < 9:
+        dst, new_image = add_to_database('face_database/', image, match_id=subject_id, max_saved_faces=max_saved_faces)
+        if len(os.listdir(dst)) < max_saved_faces:
             cv2.imwrite(str(dst) + str(new_image) +'.jpg', image)
         
         elapsedTime = time.clock() - startTime
         # print('Elapsed time = {0} [s]'.format(elapsedTime),'\n')    
 
-        # print('closest face id:',face_indx, '(',subject_id,')\n')
+        print('closest face id:',face_indx, '(',subject_id,')\n')
         # print('ten closest faces:', ordered_face_list[0:10])
-        print(subject_id[10])
         # print(dict_names[str(subject_id[-4])])
 
         # cv2.imshow('closest face',ordered_image_list[face_indx].astype(np.uint8))
         # cv2.waitKey(0)
         # cv2.destroyAllWindows()
-
-        #############
-        # display nine closest face images
-        # row1 = np.hstack((ordered_image_list[face_indx],ordered_image_list[face_indx+1],ordered_image_list[face_indx+2]))
-        # row2 = np.hstack((ordered_image_list[face_indx+3],ordered_image_list[face_indx+4],ordered_image_list[face_indx+5]))
-        # row3 = np.hstack((ordered_image_list[face_indx+6],ordered_image_list[face_indx+7],ordered_image_list[face_indx+8]))
-        # nine_faces_image = np.vstack((row1, row2, row3))
-        # cv2.imshow('nine closest faces', nine_faces_image.astype(np.uint8))
-        # cv2.waitKey(0)
-        # cv2.destroyAllWindows()
-        # cv2.imwrite('smiley_results.png', nine_faces_image.astype(np.uint8))
-        #############
 
 
 
@@ -330,7 +331,7 @@ if __name__ == '__main__':
     from skimage.io import imread_collection
     import re
     import time
-    from multiprocessing import Process
+    import shutil
 
     # run database here (separate eigen function)
 
@@ -341,14 +342,14 @@ if __name__ == '__main__':
 
     # maxCount = 255
     # face detection threshold
-    # f_t = 5000
-    f_t = 1000000000
+    f_t = 5000
+    # f_t = 1000000000
     # face recognition threhsold
-    nf_t = 15000
+    nf_t = 16000
     #nf_t = 10000000000
 
     while True:
-        numFrames = 10
+        numFrames = 90
         frames = webcam(numFrames)
 
         # eigenimage = np.asarray(frames[0])
