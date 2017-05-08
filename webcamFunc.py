@@ -4,7 +4,7 @@ title::
 description::
 	Face detection and recognition using eigenfaces
 attributes::
-	database - directory name for the database of training images (contains '
+	database - directory name for the database of training images (contains 
 	subdirectioies for each subject)
 	image - input image to test face detection and recognition
 	f_t - threshold for face detection (maximum face space distance)
@@ -20,7 +20,7 @@ copyright::
 ########################
 
 dict_names = {}
-def add_to_database(path, new_image, match_id, max_subject_faces):
+def add_to_database(path, match_id, validate=True):
 
 	if match_id is not None:
 		# parse the string to get the name of the matched subject
@@ -31,28 +31,33 @@ def add_to_database(path, new_image, match_id, max_subject_faces):
 
 		#dir_name = id_path
 		dir_name = match_id[14:][:-6]
-		validation = input("Are You {0}? [y/n] ".format(dir_name.title()))
-		if validation.strip() == 'y':
-			face_image_number = len(os.listdir(path+ dir_name)) + 1
-			dict_names[dir_name] = face_image_number
-			new_path = path + dir_name + os.path.sep
-		elif validation.strip() == 'n':
-			match_id = None
-			add_to_database(path, new_image, match_id, max_subject_faces)
+
+		if validate:
+			validation = input("Are You {0}? [y/n] ".format(dir_name.title()))
+			if validation.strip() == 'y':
+				face_image_number = len(os.listdir(path+ dir_name)) + 1
+				#dict_names[dir_name] = face_image_number
+				#new_path = path + dir_name + os.path.sep
+			elif validation.strip() == 'n':
+				new_path, face_image_number = add_to_database(path, 
+															match_id=None)
+			else:
+				msg = "User did not enter a 'y' or 'n'."
+				raise TypeError(msg)
 		else:
-			msg = "User did not enter a 'y' or 'n'."
-			raise TypeError(msg)
+			face_image_number = len(os.listdir(path + dir_name)) + 1
 
 	else:
 		dir_name = input('Enter name:').lower()
 		face_image_number = 0
 		if os.path.exists(path + dir_name):
-			msg = "Stop it, Get some help. Don't troll this function."
-			raise ValueError(msg)
+			print("Stop it, Get some help. Don't troll this function.")
+			#new_path = path + dir_name + os.path.sep
 		else:
 			os.mkdir(path + dir_name)
-			new_path = path + dir_name + os.path.sep
-			dict_names[dir_name] = face_image_number
+		
+	new_path = path + dir_name + os.path.sep
+			#dict_names[dir_name] = face_image_number
 	"""
 	#dict_names = {}
 	#if os.path.exists(home + os.path.sep + path + dir_name)== True:
@@ -119,7 +124,8 @@ def eigenfaces_train(database_images):
 
 	# print('difference vectors list shape:',np.shape(dif_vectors))
 	#print(dif_vectors)
-	# decompose the difference vectors, computes eigenvectors, eigenvalues, and variance 
+	# decompose the difference vectors, computes eigenvectors, 
+	# eigenvalues, and variance 
 	U,S,V = np.linalg.svd(np.transpose(dif_vectors), full_matrices=False)
 	#print('U, S, V shape:',np.shape(U), np.shape(S), np.shape(V))
 	#print(unS)
@@ -144,11 +150,13 @@ def eigenfaces_train(database_images):
 
 def eigenfaces_isFace(image, vect_average_face, e, f_t):
 	im_dif_vect = image.flatten() - vect_average_face
-	# compute set of weights by projecting the new image onto each of the existing eigenfaces
+	# compute set of weights by projecting the new image onto each 
+	# of the existing eigenfaces
 	weight_vect = np.dot(np.transpose(e), im_dif_vect)
 	# print('weight vector shape:', np.shape(weight_vect))
 
-	# determine if the new image is a face by measuring closeness to "face space"
+	# determine if the new image is a face by 
+	# measuring closeness to "face space"
 	projection = np.dot(weight_vect, np.transpose(e))
 	# print('projection shape:',np.shape(projection))
 
@@ -179,11 +187,13 @@ def eigenfaces_detect(database_id_list, max_subject_faces, image,
 	#vect_im = image.flatten()
 	#im_dif_vect = vect_im - vect_average_face
 	im_dif_vect = image.flatten() - vect_average_face
-	# compute set of weights by projecting the new image onto each of the existing eigenfaces
+	# compute set of weights by projecting the new image 
+	# onto each of the existing eigenfaces
 	weight_vect = np.dot(np.transpose(e), im_dif_vect)
 	# print('weight vector shape:', np.shape(weight_vect))
 
-	# determine if the new image is a face by measuring closeness to "face space"
+	# determine if the new image is a face by 
+	# measuring closeness to "face space"
 	projection = np.dot(weight_vect, np.transpose(e))
 	# print('projection shape:',np.shape(projection))
 
@@ -219,16 +229,18 @@ def eigenfaces_detect(database_id_list, max_subject_faces, image,
 	if min_weight_distance > nf_t:
 		print('\n#### NEW FACE ####\n')
 		match_id = None
+		"""
 		#retrain = False
 
 		#home = os.path.expanduser('~')
 		#path = 'src/python/modules/ipcv/face_database/'
-		#subject_path, new_image = add_to_database('face_database/', image, match_id=None, max_subject_faces=max_subject_faces)
+		#subject_path, new_image = add_to_database('face_database/', image, 
+						#match_id=None, max_subject_faces=max_subject_faces)
 		#if len(os.listdir(subject_path)) < max_subject_faces:
 		#	cv2.imwrite(str(subject_path) + str(new_image) +'.jpg', image)
 			# retrain the eigenfaces database if a new face is added
 			#retrain = True
-			
+		"""	
 	else:
 		print('\n#### MATCH FOUND ####\n')
 		#retrain = False
@@ -243,11 +255,15 @@ def eigenfaces_detect(database_id_list, max_subject_faces, image,
 	#home = os.path.expanduser('~')
 	#path = 'src/python/modules/ipcv/face_database/'
 	# print(ordered_face_list[0])
-	subject_path, new_image = add_to_database('face_database/', image, 
-												match_id, max_subject_faces)
+
+	if min_weight_distance < 13000:
+		validate = False
+
+	subject_path, face_image_number = add_to_database('face_database/', 
+														match_id, validate)
 	
 	if len(os.listdir(subject_path)) < max_subject_faces:
-		cv2.imwrite(str(subject_path) + str(new_image) +'.jpg', image)  
+		cv2.imwrite(str(subject_path) + str(face_image_number) +'.jpg', image)  
 		# retrain the eigenfaces database if a new face is added
 		retrain = True
 
@@ -258,13 +274,14 @@ def eigenfaces_detect(database_id_list, max_subject_faces, image,
 
 
 def get_faceFrame(gray, face_cascade, consecutiveFrames):
-
+	"""
 	#consecutiveThreshold = 60
 	#cap = cv2.VideoCapture(0)
-	#face_cascade = cv2.CascadeClassifier('FaceRecognitionModels/haarcascade_frontalface_default.xml')
+	#face_cascade = cv2.CascadeClassifier(
+				#'FaceRecognitionModels/haarcascade_frontalface_default.xml')
 	#consecutive = 0
-	"""
-	while True:
+	
+		while True:
 	# Capture frame-by-frame
 		ret, frame = cap.read()
 		if ret == False:
@@ -286,17 +303,17 @@ def get_faceFrame(gray, face_cascade, consecutiveFrames):
 		
 	if len(faces) != 0:
 		for (x, y, w, h) in faces:
-				"""
-				if False: #DRAWING THE GREEN RECTANGLE
-					cv2.namedWindow('Haar Cascade Box', cv2.WINDOW_AUTOSIZE)
-					faceBoxFrame = cv2.rectangle(frame, (x,y), (x+w, y+h), (0,255,0), 2)
-					cv2.imshow("Haar Cascade Box", faceBoxFrame)
-				"""
-				#x1 = faces[0,0]
-				#y1 = faces[0,1]
-				#w1 = faces[0,2]
-				#h1 = faces[0,3]
-
+			"""
+			if False: #DRAWING THE GREEN RECTANGLE
+				cv2.namedWindow('Haar Cascade Box', cv2.WINDOW_AUTOSIZE)
+				faceBoxFrame = cv2.rectangle(frame, (x,y), 
+													(x+w, y+h), (0,255,0), 2)
+				cv2.imshow("Haar Cascade Box", faceBoxFrame)
+			#x1 = faces[0,0]
+			#y1 = faces[0,1]
+			#w1 = faces[0,2]
+			#h1 = faces[0,3]
+			"""
 				x1, y1, w1, h1 = faces[0,0], faces[0,1], faces[0,2], faces[0,3]
 				add1 = h1//10
 				if y1-add1 < 0:
@@ -314,7 +331,10 @@ def get_faceFrame(gray, face_cascade, consecutiveFrames):
 					#if len(frames) <= numFrames:
 					#	frames.append(eigenBox)
 					consecutiveFrames.append(eigenBox)
-				"""
+	else:
+		consecutiveFrames = []
+				
+	"""
 				elif len(faces) == 2:
 					cv2.namedWindow('FaceBox1', cv2.WINDOW_AUTOSIZE)
 					cv2.namedWindow('FaceBox2', cv2.WINDOW_AUTOSIZE)
@@ -336,11 +356,10 @@ def get_faceFrame(gray, face_cascade, consecutiveFrames):
 
 					cv2.imshow("FaceBox1", eigenBox1)
 					# cv2.imshow("FaceBox2", eigenBox2)
-				"""
 		#if cv2.waitKey(1) & 0xFF == ord('q'):
 		#	msg = "User Has Stopped the Capture program by pressing 'q'"
 		#	raise TypeError(msg)
-
+	"""
 			
 	return consecutiveFrames
 
@@ -395,29 +414,27 @@ if __name__ == '__main__':
 
 		if len(consecutiveFrames) == consecutiveThreshold:
 			eigenimage = cv2.resize(consecutiveFrames[0],(92,112))
-			#eigenimage = cv2.cvtColor(cv2.resize(frames[0],(92,112)), cv2.COLOR_BGR2GRAY)
+			#eigenimage = cv2.cvtColor(cv2.resize(frames[0],(92,112)), 
+													#cv2.COLOR_BGR2GRAY)
 
 			# returns the file path of the matched subject
 			weight_vect = eigenfaces_isFace(eigenimage, 
 											vect_average_face, e, f_t)
 			if weight_vect is not None:
 				subject_path, retrain = eigenfaces_detect(database_id_list, 
-										max_subject_faces, eigenimage, weights, nf_t)
+											max_subject_faces, eigenimage, 
+											weights, nf_t)
 				# if len(os.listdir(subject_path)) < max_subject_faces:
-				if retrain == True:
+				if retrain:
 					print('#### RETRAINING ####')
 					database_images, database_id_list = read_database(database_path)
 					vect_average_face, weights, e = eigenfaces_train(database_images)
 
 			consecutiveFrames = []
 
-
 		if k & 0xFF == ord('q'):
 			print("Stopping Video Capture and Eigen Face Detection")
 			stop = True
-
-
-		
 
 	cap.release()
 	cv2.destroyAllWindows()
