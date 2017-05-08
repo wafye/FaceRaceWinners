@@ -62,6 +62,45 @@ author::
 copyright::
 	Copyright (C) 2017, Rochetser Institute of Technology
 """
+import tkinter
+
+class takeInput(object):
+
+	def __init__(self,requestMessage):
+		self.root = tkinter.Tk()
+		self.string = ''
+		self.frame = tkinter.Frame(self.root)
+		self.frame.pack()        
+		self.acceptInput(requestMessage)
+
+	def acceptInput(self,requestMessage):
+		r = self.frame
+
+		k = tkinter.Label(r,text=requestMessage)
+		k.pack(side='left')
+		self.e = tkinter.Entry(r,text='Name')
+		self.e.pack(side='left')
+		self.e.focus_set()
+		b = tkinter.Button(r,text='okay',command=self.gettext)
+		b.pack(side='right')
+
+	def gettext(self):
+		self.string = self.e.get()
+		self.root.destroy()
+
+	def getString(self):
+		return self.string
+
+	def waitForInput(self):
+		self.root.mainloop()
+
+def getText(requestMessage):
+	msgBox = takeInput(requestMessage)
+	#loop until the user makes a decision and the window is destroyed
+	msgBox.waitForInput()
+	return msgBox.getString()
+# var = getText('enter your name')
+# print ("Var:", var)
 
 def add_to_database(path, match_id, max_subject_faces, eigenimage, validate=True):
 	retrain = False
@@ -71,7 +110,7 @@ def add_to_database(path, match_id, max_subject_faces, eigenimage, validate=True
 		dir_name = match_id[14:][:-6]
 
 		if validate:
-			validation = input("Are You {0}? [y/n] ".format(dir_name.title()))
+			validation = getText('Are You {0}? [y/n]'.format(dir_name.title()))
 			if validation.strip() == 'y':
 				face_image_number = len(os.listdir(path+ dir_name)) + 1
 				if len(os.listdir(path+dir_name)) == max_subject_faces:
@@ -90,7 +129,10 @@ def add_to_database(path, match_id, max_subject_faces, eigenimage, validate=True
 			face_image_number = len(os.listdir(path + dir_name)) + 1
 
 	else:
-		dir_name = input('Enter name:').lower()
+
+		var = getText('enter your name')
+		# print ("Var:", var)
+		dir_name = var #input('Enter name:').lower()
 		face_image_number = 0
 
 		if os.path.exists(path + dir_name):
