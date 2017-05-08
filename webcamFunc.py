@@ -1,6 +1,3 @@
-import numpy as np
-import cv2
-
 """
 title::
     eigenfaces.py **********WITH DATABASE ADDITION
@@ -23,7 +20,7 @@ copyright::
 ########################
 
 dict_names = {}
-def add_to_database(path, new_image, match_id, max_saved_faces):
+def add_to_database(path, new_image, match_id, max_subject_faces):
 
     if match_id != None:
         # parse the string to get the name of the matched subject
@@ -54,28 +51,31 @@ def add_to_database(path, new_image, match_id, max_saved_faces):
 
     return(new_path, face_image_number)
 
-def eigenfaces(database, image, f_t, nf_t):
 
-    #############################
-    # get faces from the database
-    database_face_list = []
-    subject_dirs = [x[0] for x in os.walk(database)]
+def read_database(database_path):
+    # reads in the database and returns an imread_collection image list
+    database_id_list = []
+    subject_dirs = [x[0] for x in os.walk(database_path)]
     for subject_dir in subject_dirs:
         faces = next(os.walk(subject_dir))[2]
         if (len(faces)>0):
             for face in faces:
-                database_face_list.append(subject_dir + "/" + face)
+                database_id_list.append(subject_dir + "/" + face)
     # read in the images from the database face list
-    database_image_list = imread_collection(database_face_list)
-    #############################
+    database_images = imread_collection(database_id_list)
+
+    return database_images, database_id_list
+
+def eigenfaces_train(database_images, database_id_list):
+	# eigenface database training
 
     # database and face dimensions
-    M = len(database_image_list)
-    n,m = np.shape(database_image_list[0])
+    M = len(database_images)
+    n,m = np.shape(database_images[0])
     # print('database images:', M, ', image dimensions: (',n,m,')\n')
 
     # compute the average face
-    average_face = np.sum(database_image_list, axis=0) / M
+    average_face = np.sum(database_images, axis=0) / M
     # vectorize for further computations
     vect_average_face = average_face.flatten()
     # cv2.imshow('average_face',average_face.astype(np.uint8))
@@ -85,7 +85,7 @@ def eigenfaces(database, image, f_t, nf_t):
     dif_vectors = []
     for i in range(M):
         # vectorize (flatten) the images
-        vect_database_face = database_image_list[i].flatten()
+        vect_database_face = database_images[i].flatten()
         # compute the difference vectors
         dif = vect_database_face.astype(np.float64) - vect_average_face.astype(np.float64)
         dif_vectors.append(dif)
@@ -110,8 +110,14 @@ def eigenfaces(database, image, f_t, nf_t):
     weights = np.dot(dif_vectors, e)
     # print('weights shape:', np.shape(weights))
 
-    #############################
-    startTime = time.clock()
+    return vect_average_face, weights, e
+
+
+def eigenfaces_detect(database_images, database_id_list, max_subject_faces, image, vect_average_face, weights, e,  f_t, nf_t):
+
+	# database and face dimensions
+    M = len(database_images)
+    n,m = np.shape(database_images[0])
 
     # new face
     vect_im = image.flatten()
@@ -145,94 +151,47 @@ def eigenfaces(database, image, f_t, nf_t):
     # sort
     w_indx = np.argsort(weight_distances)
     ordered_weight_distances = weight_distances[w_indx]
-    ordered_face_list = np.asarray(database_face_list)[w_indx]
-    ordered_image_list = np.asarray(database_image_list)[w_indx]
+    ordered_id_list = np.asarray(database_id_list)[w_indx]
+    ordered_images = np.asarray(database_images)[w_indx]
 
 
-    # maximum number of faces to be added to the database per subject
-    ###############
-    max_saved_faces = 10
-    ###############
 
     # check if the face matches a face in the existing database of faces
     if min_weight_distance > nf_t:
         print('\n#### NEW FACE ####\n')
+        retrain = False
+
         home = os.path.expanduser('~')
         #path = 'src/python/modules/ipcv/face_database/'
-        dst, new_image = add_to_database('face_database/', image, match_id=None, max_saved_faces=max_saved_faces)
-        if len(os.listdir(dst)) < max_saved_faces:
-            cv2.imwrite(str(dst) + str(new_image) +'.jpg', image)
-
-
+        subject_path, new_image = add_to_database('face_database/', image, match_id=None, max_subject_faces=max_subject_faces)
+        if len(os.listdir(subject_path)) < max_subject_faces:
+            cv2.imwrite(str(subject_path) + str(new_image) +'.jpg', image)
+            # retrain the eigenfaces database if a new face is added
+            retrain = True
+            
     else:
         print('\n#### MATCH FOUND ####\n')
+        retrain = False
 
         face_indx = np.where(ordered_weight_distances == ordered_weight_distances[0])[0][0]
-        subject_id = ordered_face_list[face_indx]
+        subject_id = ordered_id_list[face_indx]
 
         home = os.path.expanduser('~')
         #path = 'src/python/modules/ipcv/face_database/'
         # print(ordered_face_list[0])
 
-        dst, new_image = add_to_database('face_database/', image, match_id=subject_id, max_saved_faces=max_saved_faces)
-        if len(os.listdir(dst)) < max_saved_faces:
-            cv2.imwrite(str(dst) + str(new_image) +'.jpg', image)
-        
-        elapsedTime = time.clock() - startTime
-        # print('Elapsed time = {0} [s]'.format(elapsedTime),'\n')    
+        subject_path, new_image = add_to_database('face_database/', image, match_id=subject_id, max_subject_faces=max_subject_faces)
+        if len(os.listdir(subject_path)) < max_subject_faces:
+            cv2.imwrite(str(subject_path) + str(new_image) +'.jpg', image)  
+            # retrain the eigenfaces database if a new face is added
+            retrain = True
 
-        print('closest face id:',face_indx, '(',subject_id,')\n')
+        print('closest face id:',face_indx, '(',subject_id,')')
         # print('ten closest faces:', ordered_face_list[0:10])
-        # print(dict_names[str(subject_id[-4])])
 
-        # cv2.imshow('closest face',ordered_image_list[face_indx].astype(np.uint8))
-        # cv2.waitKey(0)
-        # cv2.destroyAllWindows()
+    return subject_path, retrain
 
 
-
-########################
-# test harness
-########################
-
-# if __name__ == '__main__':
-
-#     import os
-#     import sys
-#     #import ipcv
-#     import cv2
-#     import numpy as np
-#     from skimage.io import imread_collection
-#     import re
-#     import time
-
-#     home = os.path.expanduser('~')
-#     #baseDirectory = 'src/python/modules/ipcv/'
-#     database = './face_database/'
-#     # path = baseDirectory + database #+ os.path.sep
-    
-#     #filename_image = home + os.path.sep + 'src/python/modules/ipcv/eigenface_images/obama.png'
-#     #filename_image = './testImages/lenna_color.tif'
-#     filename_image = './testImages/obama.png'
-#     #path = 'src/python/modules/ipcv/face_database/'
-#     #filename_image = home + os.path.sep + 'src/python/modules/ipcv/eigenface_images/mickey.jpg'
-
-
-#     image = cv2.imread(filename_image, cv2.IMREAD_GRAYSCALE)
-#     # cv2.imshow('image',image.astype(np.uint8))
-#     # cv2.waitKey(0)
-#     # cv2.destroyAllWindows()
-
-
-#     maxCount = 255
-#     # face detection threshold
-#     # f_t = 5000
-#     f_t = 1000000000
-#     # face recognition threhsold
-#     nf_t = 15000
-#     #nf_t = 10000000000
-
-#     eigenface = eigenfaces(database=database, image=image, f_t=f_t, nf_t=nf_t)
 
 def webcam(numFrames):
 
@@ -337,7 +296,9 @@ if __name__ == '__main__':
 
     # home = os.path.expanduser('~')
     #baseDirectory = 'src/python/modules/ipcv/'
-    database = './face_database/'
+    database_path = './face_database/'
+    # maximum number of faces to be added to the database per subject
+    max_subject_faces = 10
     # path = baseDirectory + database #+ os.path.sep
 
     # maxCount = 255
@@ -345,8 +306,14 @@ if __name__ == '__main__':
     f_t = 5000
     # f_t = 1000000000
     # face recognition threhsold
-    nf_t = 16000
+    nf_t = 15000
     #nf_t = 10000000000
+
+
+    # initial read in
+    database_images, database_id_list = read_database(database_path)
+    # initial eigenfaces training
+    vect_average_face, weights, e = eigenfaces_train(database_images, database_id_list)
 
     while True:
         numFrames = 90
@@ -354,11 +321,16 @@ if __name__ == '__main__':
 
         # eigenimage = np.asarray(frames[0])
         # eigenimage = cv2.resize(frames[0],(92,112))
-        eigenimage = cv2.cvtColor(cv2.resize(frames[0],(92,112)),cv2.COLOR_BGR2GRAY)
+        eigenimage = cv2.cvtColor(cv2.resize(frames[0],(92,112)), cv2.COLOR_BGR2GRAY)
 
-        # return diction key of name to print name
-        eigenface = eigenfaces(database,eigenimage,f_t,nf_t)
+        # returns the file path of the matched subject
+        subject_path, retrain = eigenfaces_detect(database_images, database_id_list, max_subject_faces, eigenimage, vect_average_face, weights, e, f_t, nf_t)
 
+        # if len(os.listdir(subject_path)) < max_subject_faces:
+        if retrain == True:
+        	print('#### RETRAINING ####')
+        	database_images, database_id_list = read_database(database_path)
+        	vect_average_face, weights, e = eigenfaces_train(database_images, database_id_list)
 
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
