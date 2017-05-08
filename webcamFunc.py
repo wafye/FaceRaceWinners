@@ -75,13 +75,12 @@ def add_to_database(path, match_id, max_subject_faces, eigenimage, validate=True
 			if validation.strip() == 'y':
 				face_image_number = len(os.listdir(path+ dir_name)) + 1
 				if len(os.listdir(path+dir_name)) == max_subject_faces:
-					print(match_id)
 					cv2.imwrite(match_id, eigenimage)
 					retrain = True
 
 			elif validation.strip() == 'n':
 				match_id = None
-				new_path, face_image_number = add_to_database(path, 
+				retrain, dir_name = add_to_database(path, 
 										match_id, max_subject_faces,
 										eigenimage,validate)
 			else:
@@ -120,24 +119,17 @@ def add_to_database(path, match_id, max_subject_faces, eigenimage, validate=True
 		cv2.imwrite(str(new_path) + str(face_image_number) +'.jpg', eigenimage) 
 		retrain = True
 
-	return retrain
+	return retrain, dir_name
 
 def farthestMatch(imageDirectory, eigenimage):
 	#ASK JACKSON IF THIS IS CORRECT
+	order = 'worst'
+	nf_t = np.inf
 	database_images, database_id_list = read_database(imageDirectory)
 	vect_avg_faces, weights, e = eigenfaces_train(database_images)
 	weight_vect = eigenfaces_isFace(eigenimage, vect_average_face, e, 100000)
-	
-	# determine if the face is a match to an existing face
-	weight_distances = np.sum( np.abs(weight_vect - weights), axis=1)
-
-	# sort
-	w_indx = np.argsort(-weight_distances)
-	ordered_weight_distances = weight_distances[w_indx]
-	ordered_id_list = np.asarray(database_id_list)[w_indx]
-
-	face_indx = np.where(ordered_weight_distances == ordered_weight_distances[0])[0][0]
-	subject_id = ordered_id_list[face_indx]
+	subject_id, min_weight_distance = eigenfaces_detect(database_id_list, 
+											weight_vect, weights, nf_t, order)
 	print("The Farthest Face ID in the'",subject_id[14:][:-6], 
 									"'databse is",'(',subject_id[14:],')')
 
@@ -222,7 +214,7 @@ def eigenfaces_isFace(image, vect_average_face, e, f_t):
 
 	return weight_vect
 
-def eigenfaces_detect(database_id_list, weight_vect, weights, nf_t):
+def eigenfaces_detect(database_id_list, weight_vect, weights, nf_t, order):
 
 	# determine if the face is a match to an existing face
 	weight_distances = np.sum( np.abs(weight_vect - weights), axis=1)
@@ -230,7 +222,10 @@ def eigenfaces_detect(database_id_list, weight_vect, weights, nf_t):
 	print('minimum weight distance:', min_weight_distance)
 
 	# sort
-	w_indx = np.argsort(weight_distances)
+	if order == 'best':
+		w_indx = np.argsort(weight_distances)
+	else:
+		w_indx = np.argsort(-weight_distances)
 	ordered_weight_distances = weight_distances[w_indx]
 	ordered_id_list = np.asarray(database_id_list)[w_indx]
 
@@ -298,10 +293,14 @@ if __name__ == '__main__':
 	nf_t = 15000
 	#nf_t = 10000000000
 	v_t = 12500 #Validation Threshold
-	consecutiveThreshold = 60
+	consecutiveThreshold = 20
 	consecutiveFrames = []
 	stop = False
 	validate = True
+	order = 'best'
+	font = cv2.FONT_HERSHEY_SIMPLEX
+	width, height = int(cap.get(3)), int(cap.get(4))
+	found = None
 
 	# initial read in
 	database_images, database_id_list = read_database(database_path)
@@ -321,7 +320,12 @@ if __name__ == '__main__':
 		gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
 		# Display the resulting frame
-		cv2.imshow('frame', frame)
+		#cv2.imshow('frame', frame)
+		if found is not None:
+			cv2.putText(frame, found, (0,height-20), font, 1, (0,0,0), 
+																2, cv2.LINE_AA)
+		cv2.imshow("fame", frame)
+
 		consecutiveFrames = get_faceFrame(gray, cascade, consecutiveFrames)
 
 		if len(consecutiveFrames) == consecutiveThreshold:
@@ -333,13 +337,15 @@ if __name__ == '__main__':
 			if weight_vect is not None:
 				match_id, min_weight_distance = eigenfaces_detect(
 											database_id_list, weight_vect,
-											weights, nf_t)
+											weights, nf_t, order)
 
 				if min_weight_distance < v_t:
 					validate = False
 
-				retrain = add_to_database(database_path, match_id, 
+				retrain, dir_name = add_to_database(database_path, match_id, 
 						max_subject_faces, eigenimage, validate)
+
+				found = dir_name
 
 				if retrain:
 					print('#### RETRAINING ####')
