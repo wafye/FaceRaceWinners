@@ -22,34 +22,57 @@ copyright::
 dict_names = {}
 def add_to_database(path, new_image, match_id, max_subject_faces):
 
-	if match_id != None:
+	if match_id is not None:
 		# parse the string to get the name of the matched subject
-		id_path = match_id.replace(path,'')[:-6]
-		name = id_path.replace('./','')
-		print('name:', name)
-		dir_name = name
+		#print("Test Parse", match_id[14:][:-6])
+		#id_path = match_id.replace(path,'')[:-6]
+		#name = id_path.replace('./','')
+		#print('name:', id_path)
+
+		#dir_name = id_path
+		dir_name = match_id[14:][:-6]
+		validation = input("Are You {0}? [y/n] ".format(dir_name.title()))
+		if validation.strip() == 'y':
+			face_image_number = len(os.listdir(path+ dir_name)) + 1
+			dict_names[dir_name] = face_image_number
+			new_path = path + dir_name + os.path.sep
+		elif validation.strip() == 'n':
+			match_id = None
+			add_to_database(path, new_image, match_id, max_subject_faces)
+		else:
+			msg = "User did not enter a 'y' or 'n'."
+			raise TypeError(msg)
 
 	else:
-		 dir_name = input('Enter name:')
-
+		dir_name = input('Enter name:').lower()
+		face_image_number = 0
+		if os.path.exists(path + dir_name):
+			msg = "Stop it, Get some help. Don't troll this function."
+			raise ValueError(msg)
+		else:
+			os.mkdir(path + dir_name)
+			new_path = path + dir_name + os.path.sep
+			dict_names[dir_name] = face_image_number
+	"""
 	#dict_names = {}
 	#if os.path.exists(home + os.path.sep + path + dir_name)== True:
 	if os.path.exists( path + dir_name)== True:
+		validation = input("Are You ", dir_name, "?")
 		face_image_number = len(os.listdir(path+ dir_name)) + 1
 		dict_names[dir_name] = face_image_number
 		#new_path = home + os.path.sep + path + dir_name + os.path.sep
 		new_path = path + dir_name + os.path.sep
-
+	
 	else:
 		# face_image_number = input('Enter image number:')
-		face_image_number = 1
+		face_image_number = 0
 		#os.mkdir(home + os.path.sep + path + dir_name)
 		os.mkdir(path + dir_name)
 		new_path = path + dir_name + os.path.sep
 		dict_names[dir_name] = face_image_number
 		#new_path = home + os.path.sep + path + dir_name + os.path.sep
-
-	return(new_path, face_image_number)
+	"""
+	return new_path, face_image_number
 
 
 def read_database(database_path):
@@ -139,14 +162,14 @@ def eigenfaces_isFace(image, vect_average_face, e, f_t):
 	if min_fs_distance > f_t:
 		print('\n#### NO FACE DETECTED ####\n')
 		weight_vect = None
-		
+
 	else:
 		print('\n#### FACE DETECTED ####\n')
 
 	return weight_vect
 
-def eigenfaces_detect(database_images, database_id_list, max_subject_faces,
-						 image, vect_average_face, weights, e,  f_t, nf_t):
+def eigenfaces_detect(database_id_list, max_subject_faces, image, 
+														weights, nf_t):
 	"""
 	# database and face dimensions
 	#M = len(database_images)
@@ -178,6 +201,7 @@ def eigenfaces_detect(database_images, database_id_list, max_subject_faces,
 		print('\n#### FACE DETECTED ####\n')
 	"""
 	# determine if the face is a match to an existing face
+
 	weight_distances = np.sum( np.abs(weight_vect - weights), axis=1)
 	min_weight_distance = np.sqrt(np.min(weight_distances))
 	print('minimum weight distance:', min_weight_distance)
@@ -186,41 +210,47 @@ def eigenfaces_detect(database_images, database_id_list, max_subject_faces,
 	w_indx = np.argsort(weight_distances)
 	ordered_weight_distances = weight_distances[w_indx]
 	ordered_id_list = np.asarray(database_id_list)[w_indx]
-	ordered_images = np.asarray(database_images)[w_indx]
+	#ordered_id_list = database_id_list[w_indx]	
+	#ordered_images = np.asarray(database_images)[w_indx]
 
-
+	retrain = False
 
 	# check if the face matches a face in the existing database of faces
 	if min_weight_distance > nf_t:
 		print('\n#### NEW FACE ####\n')
-		retrain = False
+		match_id = None
+		#retrain = False
 
-		home = os.path.expanduser('~')
+		#home = os.path.expanduser('~')
 		#path = 'src/python/modules/ipcv/face_database/'
-		subject_path, new_image = add_to_database('face_database/', image, match_id=None, max_subject_faces=max_subject_faces)
-		if len(os.listdir(subject_path)) < max_subject_faces:
-			cv2.imwrite(str(subject_path) + str(new_image) +'.jpg', image)
+		#subject_path, new_image = add_to_database('face_database/', image, match_id=None, max_subject_faces=max_subject_faces)
+		#if len(os.listdir(subject_path)) < max_subject_faces:
+		#	cv2.imwrite(str(subject_path) + str(new_image) +'.jpg', image)
 			# retrain the eigenfaces database if a new face is added
-			retrain = True
+			#retrain = True
 			
 	else:
 		print('\n#### MATCH FOUND ####\n')
-		retrain = False
+		#retrain = False
 
 		face_indx = np.where(ordered_weight_distances == ordered_weight_distances[0])[0][0]
 		subject_id = ordered_id_list[face_indx]
+		print('The Closest Face ID in the databse is','(',subject_id[14:],')')
 
-		home = os.path.expanduser('~')
-		#path = 'src/python/modules/ipcv/face_database/'
-		# print(ordered_face_list[0])
+		match_id = subject_id
 
-		subject_path, new_image = add_to_database('face_database/', image, match_id=subject_id, max_subject_faces=max_subject_faces)
-		if len(os.listdir(subject_path)) < max_subject_faces:
-			cv2.imwrite(str(subject_path) + str(new_image) +'.jpg', image)  
-			# retrain the eigenfaces database if a new face is added
-			retrain = True
 
-		print('closest face id:',face_indx, '(',subject_id,')')
+	#home = os.path.expanduser('~')
+	#path = 'src/python/modules/ipcv/face_database/'
+	# print(ordered_face_list[0])
+	subject_path, new_image = add_to_database('face_database/', image, 
+												match_id, max_subject_faces)
+	
+	if len(os.listdir(subject_path)) < max_subject_faces:
+		cv2.imwrite(str(subject_path) + str(new_image) +'.jpg', image)  
+		# retrain the eigenfaces database if a new face is added
+		retrain = True
+
 		# print('ten closest faces:', ordered_face_list[0:10])
 
 	return subject_path, retrain
@@ -370,10 +400,9 @@ if __name__ == '__main__':
 			# returns the file path of the matched subject
 			weight_vect = eigenfaces_isFace(eigenimage, 
 											vect_average_face, e, f_t)
-			if weight_vect != None:
-				subject_path, retrain = eigenfaces_detect(database_images, 
-										database_id_list, max_subject_faces, eigenimage, 
-										vect_average_face, weights, e, f_t, nf_t)
+			if weight_vect is not None:
+				subject_path, retrain = eigenfaces_detect(database_id_list, 
+										max_subject_faces, eigenimage, weights, nf_t)
 				# if len(os.listdir(subject_path)) < max_subject_faces:
 				if retrain == True:
 					print('#### RETRAINING ####')
