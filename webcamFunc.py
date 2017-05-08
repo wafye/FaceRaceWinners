@@ -102,10 +102,15 @@ def add_to_database(path, match_id, max_subject_faces, eigenimage, validate=True
 
 				#OVERWRITE IMAGE WHO'S MATCH IS FARTHEST IN THE DIRECTORY
 				farthest = farthestMatch(path+dir_name, eigenimage)
+				print("Replacing the most dissimilar face in the dataset")
 				cv2.imwrite(farthest, eigenimage)
 
 				retrain = True
-
+			else:
+				face_image_number = len(os.listdir(path + dir_name)) + 1
+				cv2.imwrite(path+dir_name+os.path.sep + str(face_image_number) 
+													+'.jpg', eigenimage) 
+				retrain = True
 		else:
 			os.mkdir(path + dir_name)
 		
@@ -320,7 +325,7 @@ if __name__ == '__main__':
 		consecutiveFrames = get_faceFrame(gray, cascade, consecutiveFrames)
 
 		if len(consecutiveFrames) == consecutiveThreshold:
-			eigenimage = cv2.resize(consecutiveFrames[0],(92,112))
+			eigenimage = cv2.resize(consecutiveFrames[-1],(92,112))
 
 			# returns the file path of the matched subject
 			weight_vect = eigenfaces_isFace(eigenimage, 
