@@ -110,11 +110,13 @@ def add_to_database(path, match_id, max_subject_faces, eigenimage, validate=True
 		dir_name = match_id[14:][:-6]
 
 		if validate:
-			validation = getText('Are You {0}? [y/n]'.format(dir_name.title()))
+			#validation = getText('Are You {0}? [y/n]'.format(dir_name.title()))
+			validation = input('Are You {0}? [y/n] '.format(dir_name.title()))
 			if validation.strip() == 'y':
 				face_image_number = len(os.listdir(path+ dir_name)) + 1
 				if len(os.listdir(path+dir_name)) == max_subject_faces:
-					cv2.imwrite(match_id, eigenimage)
+					#farthest = replaceFarthestMatch(path+dir_name, eigenimage)
+					replaceFarthestMatch(path+dir_name, eigenimage)
 					retrain = True
 
 			elif validation.strip() == 'n':
@@ -128,11 +130,18 @@ def add_to_database(path, match_id, max_subject_faces, eigenimage, validate=True
 		else:
 			face_image_number = len(os.listdir(path + dir_name)) + 1
 
+		#print('The Closest Face ID in the database is','(',match_id[14:],')',
+		#		"The distance away is", min_weight_distance, " units in faceSpace")
+
 	else:
 
-		var = getText('enter your name')
+		#var = getText('enter your name')
 		# print ("Var:", var)
-		dir_name = var #input('Enter name:').lower()
+		dir_name = input('Enter name: ').lower()
+
+		if dir_name == "quit" or dir_name == "Quit" or dir_name == 'q':
+			msg = "Getting out of the face race program"
+			raise TypeError(msg)
 		face_image_number = 0
 
 		if os.path.exists(path + dir_name):
@@ -142,9 +151,8 @@ def add_to_database(path, match_id, max_subject_faces, eigenimage, validate=True
 			if len(os.listdir(path+dir_name)) == max_subject_faces:
 
 				#OVERWRITE IMAGE WHO'S MATCH IS FARTHEST IN THE DIRECTORY
-				farthest = farthestMatch(path+dir_name, eigenimage)
-				print("Replacing the most dissimilar face in the dataset")
-				cv2.imwrite(farthest, eigenimage)
+				#farthest = replaceFarthestMatch(path+dir_name, eigenimage)
+				replaceFarthestMatch(path+dir_name, eigenimage)
 
 				retrain = True
 			else:
@@ -163,7 +171,7 @@ def add_to_database(path, match_id, max_subject_faces, eigenimage, validate=True
 
 	return retrain, dir_name
 
-def farthestMatch(imageDirectory, eigenimage):
+def replaceFarthestMatch(imageDirectory, eigenimage):
 	#ASK JACKSON IF THIS IS CORRECT
 	order = 'worst'
 	nf_t = np.inf
@@ -172,8 +180,10 @@ def farthestMatch(imageDirectory, eigenimage):
 	weight_vect = eigenfaces_isFace(eigenimage, vect_average_face, e, 100000)
 	subject_id, min_weight_distance = eigenfaces_detect(database_id_list, 
 											weight_vect, weights, nf_t, order)
-	print("The Farthest Face ID in the'",subject_id[14:][:-6], 
-									"'databse is",'(',subject_id[14:],')')
+	print("The Farthest Face ID is ",subject_id[14:])
+	print("It is ", min_weight_distance, "Units away from the current image")
+	print("Overwriting the ID with the current image\n")
+	cv2.imwrite(subject_id, eigenimage)
 
 	return subject_id
 
@@ -244,15 +254,15 @@ def eigenfaces_isFace(image, vect_average_face, e, f_t):
 	fs_distances = np.abs(im_dif_vect - projection)
 	min_fs_distance = np.sqrt(np.min(fs_distances))
 	# print('face space distances shape:',np.shape(fs_distances))
-	print('\nminimum distance to face space:',min_fs_distance)
+	#print('\nminimum distance to face space:',min_fs_distance)
 
 	# check if its a face based a face threshold value (f_t) 
 	if min_fs_distance > f_t:
-		print('\n#### NO FACE DETECTED ####\n')
+		print('\n#### THE FACE DETECTED IS NOT CLOSE ENOUGH TO FACESPACE ####\n')
 		weight_vect = None
 
-	else:
-		print('\n#### FACE DETECTED ####\n')
+	#else:
+	#	print('\n#### FACE DETECTED ####\n')
 
 	return weight_vect
 
@@ -261,30 +271,41 @@ def eigenfaces_detect(database_id_list, weight_vect, weights, nf_t, order):
 	# determine if the face is a match to an existing face
 	weight_distances = np.sum( np.abs(weight_vect - weights), axis=1)
 	min_weight_distance = np.sqrt(np.min(weight_distances))
-	print('minimum weight distance:', min_weight_distance)
 
 	# sort
 	if order == 'best':
+		#print('weight distance from best match:', min_weight_distance)
 		w_indx = np.argsort(weight_distances)
 	else:
+		#print("weight distance from worst match for subject", min_weight_distance)
 		w_indx = np.argsort(-weight_distances)
 	ordered_weight_distances = weight_distances[w_indx]
 	ordered_id_list = np.asarray(database_id_list)[w_indx]
+	#print(ordered_id_list)
 
 
 	# check if the face matches a face in the existing database of faces
 	if min_weight_distance > nf_t:
-		print('\n#### NEW FACE ####\n')
+		print('##########################################')
+		print('##########################################')
+		print('####                                  ####')
+		print('####             NEW FACE             ####')
+		print('####                                  ####')
+		print('##########################################')
+		print('##########################################\n')
+
 		match_id = None
 
 	else:
-		print('\n#### MATCH FOUND ####\n')
+		match_id = ordered_id_list[0]
+		if order == 'best':
+			print('\n###########################################')
+			print('####           MATCH  FOUND            ####')
+			print('###########################################\n')
+			print("The colosest face ID is: ", ordered_id_list[0][14:])
+			print("The distance away from the rest of the subject images is", min_weight_distance)
+			print('\n')
 
-		face_indx = np.where(ordered_weight_distances == ordered_weight_distances[0])[0][0]
-		subject_id = ordered_id_list[face_indx]
-		print('The Closest Face ID in the databse is','(',subject_id[14:],')')
-
-		match_id = subject_id
 
 	return match_id, min_weight_distance
 
@@ -364,7 +385,7 @@ if __name__ == '__main__':
 		# Display the resulting frame
 		#cv2.imshow('frame', frame)
 		if found is not None:
-			cv2.putText(frame, found, (0,height-20), font, 1, (0,0,0), 
+			cv2.putText(frame, found, (10,30), font, 1, (0,255,0), 
 																2, cv2.LINE_AA)
 		cv2.imshow("fame", frame)
 
@@ -380,6 +401,7 @@ if __name__ == '__main__':
 				match_id, min_weight_distance = eigenfaces_detect(
 											database_id_list, weight_vect,
 											weights, nf_t, order)
+				
 
 				if min_weight_distance < v_t:
 					validate = False
@@ -387,10 +409,10 @@ if __name__ == '__main__':
 				retrain, dir_name = add_to_database(database_path, match_id, 
 						max_subject_faces, eigenimage, validate)
 
-				found = dir_name
+				found = dir_name.title()
 
 				if retrain:
-					print('#### RETRAINING ####')
+					print('\n\n\n#### RETRAINING ####\n\n\n')
 					database_images, database_id_list = read_database(database_path)
 					vect_average_face, weights, e = eigenfaces_train(database_images)
 
