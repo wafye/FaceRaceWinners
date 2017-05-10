@@ -172,9 +172,10 @@ def add_to_database(path, match_id, max_subject_faces, eigenimage, validate=True
 	return retrain, dir_name
 
 def replaceFarthestMatch(imageDirectory, eigenimage):
-	#ASK JACKSON IF THIS IS CORRECT
 	order = 'worst'
 	nf_t = np.inf
+	font = cv2.FONT_HERSHEY_SIMPLEX
+
 	database_images, database_id_list = read_database(imageDirectory)
 	vect_avg_faces, weights, e = eigenfaces_train(database_images)
 	weight_vect = eigenfaces_isFace(eigenimage, vect_average_face, e, 100000)
@@ -183,7 +184,19 @@ def replaceFarthestMatch(imageDirectory, eigenimage):
 	print("The Farthest Face ID is ",subject_id[14:])
 	print("It is ", min_weight_distance, "Units away from the current image")
 	print("Overwriting the ID with the current image\n")
+	#cv2.namedWindow("Replacement Window")
+	badImage = cv2.imread(subject_id)
+	replacementImage = np.zeros((112,92*2,3))
+	replacementImage[0:112,0:92,:] = badImage[:,:,:].astype(np.uint8)
+	replacementImage[0:112,92:92*2,:] = np.repeat(eigenimage[:,:,np.newaxis],3,axis=2)
+	cv2.putText(replacementImage, "Old", (10,110), font, 1, (0,0,255), 
+		2, cv2.LINE_AA)	
+	cv2.putText(replacementImage, "New", (102, 110), font, 1, (0,0,255),
+		2, cv2.LINE_AA)
+	cv2.imshow("Replacement Window", replacementImage.astype(np.uint8))
+	cv2.waitKey(30)
 	cv2.imwrite(subject_id, eigenimage)
+
 
 	return subject_id
 
@@ -258,6 +271,7 @@ def eigenfaces_isFace(image, vect_average_face, e, f_t):
 
 	# check if its a face based a face threshold value (f_t) 
 	if min_fs_distance > f_t:
+		print(min_fs_distance)
 		print('\n#### THE FACE DETECTED IS NOT CLOSE ENOUGH TO FACESPACE ####\n')
 		weight_vect = None
 
@@ -302,7 +316,7 @@ def eigenfaces_detect(database_id_list, weight_vect, weights, nf_t, order):
 			print('\n###########################################')
 			print('####           MATCH  FOUND            ####')
 			print('###########################################\n')
-			print("The colosest face ID is: ", ordered_id_list[0][14:])
+			print("The closest face ID is: ", ordered_id_list[0][14:])
 			print("The distance away from the rest of the subject images is", min_weight_distance)
 			print('\n')
 
@@ -333,6 +347,22 @@ def get_faceFrame(gray, face_cascade, consecutiveFrames):
 			
 	return consecutiveFrames
 
+def colorPresence(frame):
+	presence = False
+	lower = np.array([0,10,30], dtype="uint8")
+	upper = np.array([20,150,255], dtype="uint8")
+	kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (11, 11))\
+
+	hsvFrame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+	skinMask = cv2.inRange(hsvFrame, lower, upper)
+	skinMask = cv2.morphologyEx(skinMask, cv2.MORPH_OPEN, kernel)
+	cv2.imshow("SkinMask", skinMask)
+	#skinMask[skinMask==255] = 1
+	if np.sum(skinMask) > 0:
+		presence = True
+
+	return presence
+
 if __name__ == '__main__':
 	import os
 	import cv2
@@ -341,7 +371,6 @@ if __name__ == '__main__':
 
 	database_path = 'face_database/'
 	# maximum number of faces to be added to the database per subject
-	max_subject_faces = 9
 	cap = cv2.VideoCapture(0)
 	if cap.isOpened() == False:
 		msg = "The webcam was not able to be opened"
@@ -349,11 +378,12 @@ if __name__ == '__main__':
 
 	cascade = cv2.CascadeClassifier(
 				'FaceRecognitionModels/haarcascade_frontalface_default.xml')
-
+	
+	max_subject_faces = 40
 	# face detection threshold
-	f_t = 5000
+	f_t = 10000
 	# face recognition threhsold
-	nf_t = 15000
+	nf_t = 16000
 	#nf_t = 10000000000
 	v_t = 12500 #Validation Threshold
 	consecutiveThreshold = 20
@@ -371,7 +401,7 @@ if __name__ == '__main__':
 	vect_average_face, weights, e = eigenfaces_train(database_images)
 
 	while not stop:
-		k = cv2.waitKey(30)
+		k = cv2.waitKey(1)
 		ret, frame = cap.read() #Capture frame-by-frame
 		if ret == False:
 			print("No Frames Were Able To Be Grabbed."
@@ -379,44 +409,50 @@ if __name__ == '__main__':
 				"There are no more frames in the video file")
 			break
 		frame = cv2.flip(frame,1)
+
+		presence = colorPresence(frame)
+
 		# Our operations on the frame come here
 		gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
 		# Display the resulting frame
-		#cv2.imshow('frame', frame)
 		if found is not None:
-			cv2.putText(frame, found, (10,30), font, 1, (0,255,0), 
+
+			cv2.putText(frame, found.rstrip('/'), (10,30), font, 1, (0,255,0), 
 																2, cv2.LINE_AA)
 		cv2.imshow("fame", frame)
 
 		consecutiveFrames = get_faceFrame(gray, cascade, consecutiveFrames)
+		
+		if presence:
+			if len(consecutiveFrames) == consecutiveThreshold:
+				eigenimage = cv2.resize(consecutiveFrames[-1],(92,112))
 
-		if len(consecutiveFrames) == consecutiveThreshold:
-			eigenimage = cv2.resize(consecutiveFrames[-1],(92,112))
+				# returns the file path of the matched subject
+				weight_vect = eigenfaces_isFace(eigenimage, 
+												vect_average_face, e, f_t)
+				if weight_vect is not None:
+					match_id, min_weight_distance = eigenfaces_detect(
+												database_id_list, weight_vect,
+												weights, nf_t, order)
+					print(match_id)
 
-			# returns the file path of the matched subject
-			weight_vect = eigenfaces_isFace(eigenimage, 
-											vect_average_face, e, f_t)
-			if weight_vect is not None:
-				match_id, min_weight_distance = eigenfaces_detect(
-											database_id_list, weight_vect,
-											weights, nf_t, order)
-				
+					if min_weight_distance < v_t:
+						validate = False
 
-				if min_weight_distance < v_t:
-					validate = False
+					retrain, dir_name = add_to_database(database_path, match_id, 
+							max_subject_faces, eigenimage, validate)
 
-				retrain, dir_name = add_to_database(database_path, match_id, 
-						max_subject_faces, eigenimage, validate)
+					found = dir_name.title()
 
-				found = dir_name.title()
+					if retrain:
+						print('\n\n\n#### RETRAINING ####\n\n\n')
+						database_images, database_id_list = read_database(database_path)
+						vect_average_face, weights, e = eigenfaces_train(database_images)
+						cv2.destroyWindow("Replacement Window")
 
-				if retrain:
-					print('\n\n\n#### RETRAINING ####\n\n\n')
-					database_images, database_id_list = read_database(database_path)
-					vect_average_face, weights, e = eigenfaces_train(database_images)
 
-			consecutiveFrames = []
+				consecutiveFrames = []
 
 		if k & 0xFF == ord('q'):
 			print("Stopping Video Capture and Eigen Face Detection")
