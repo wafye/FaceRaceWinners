@@ -102,7 +102,8 @@ def getText(requestMessage):
 # var = getText('enter your name')
 # print ("Var:", var)
 
-def add_to_database(path, match_id, max_subject_faces, eigenimage, validate=True):
+def add_to_database(path, match_id, max_subject_faces, eigenimage, 
+												frameSize, validate=True):
 	retrain = False
 
 	if match_id is not None:
@@ -116,14 +117,14 @@ def add_to_database(path, match_id, max_subject_faces, eigenimage, validate=True
 				face_image_number = len(os.listdir(path+ dir_name)) + 1
 				if len(os.listdir(path+dir_name)) == max_subject_faces:
 					#farthest = replaceFarthestMatch(path+dir_name, eigenimage)
-					replaceFarthestMatch(path+dir_name, eigenimage)
+					replaceFarthestMatch(path+dir_name, eigenimage, frameSize)
 					retrain = True
 
 			elif validation.strip() == 'n':
 				match_id = None
 				retrain, dir_name = add_to_database(path, 
 										match_id, max_subject_faces,
-										eigenimage,validate)
+										eigenimage,frameSize, validate)
 			else:
 				msg = "User did not enter a 'y' or 'n'."
 				raise TypeError(msg)
@@ -152,7 +153,7 @@ def add_to_database(path, match_id, max_subject_faces, eigenimage, validate=True
 
 				#OVERWRITE IMAGE WHO'S MATCH IS FARTHEST IN THE DIRECTORY
 				#farthest = replaceFarthestMatch(path+dir_name, eigenimage)
-				replaceFarthestMatch(path+dir_name, eigenimage)
+				replaceFarthestMatch(path+dir_name, eigenimage, frameSize)
 
 				retrain = True
 			else:
@@ -171,7 +172,7 @@ def add_to_database(path, match_id, max_subject_faces, eigenimage, validate=True
 
 	return retrain, dir_name
 
-def replaceFarthestMatch(imageDirectory, eigenimage):
+def replaceFarthestMatch(imageDirectory, eigenimage, frameSize):
 	order = 'worst'
 	nf_t = np.inf
 	font = cv2.FONT_HERSHEY_SIMPLEX
@@ -184,14 +185,15 @@ def replaceFarthestMatch(imageDirectory, eigenimage):
 	print("The Farthest Face ID is ",subject_id[14:])
 	print("It is ", min_weight_distance, "Units away from the current image")
 	print("Overwriting the ID with the current image\n")
-	#cv2.namedWindow("Replacement Window")
 	badImage = cv2.imread(subject_id)
 	replacementImage = np.zeros((112,92*2,3))
 	replacementImage[0:112,0:92,:] = badImage[:,:,:].astype(np.uint8)
 	replacementImage[0:112,92:92*2,:] = np.repeat(eigenimage[:,:,np.newaxis],3,axis=2)
-	cv2.putText(replacementImage, "Old", (10,110), font, 1, (0,0,255), 
+	replacementImage = cv2.resize(replacementImage, (frameSize))
+	print(frameSize)
+	cv2.putText(replacementImage, "Old", (140,480), font, 1, (0,0,255), 
 		2, cv2.LINE_AA)	
-	cv2.putText(replacementImage, "New", (102, 110), font, 1, (0,0,255),
+	cv2.putText(replacementImage, "New", (450, 480), font, 1, (0,0,255),
 		2, cv2.LINE_AA)
 	cv2.imshow("Replacement Window", replacementImage.astype(np.uint8))
 	cv2.waitKey(30)
@@ -394,6 +396,7 @@ if __name__ == '__main__':
 	font = cv2.FONT_HERSHEY_SIMPLEX
 	width, height = int(cap.get(3)), int(cap.get(4))
 	found = None
+	frameSize = (width,height)
 
 	# initial read in
 	database_images, database_id_list = read_database(database_path)
@@ -435,13 +438,12 @@ if __name__ == '__main__':
 					match_id, min_weight_distance = eigenfaces_detect(
 												database_id_list, weight_vect,
 												weights, nf_t, order)
-					print(match_id)
 
 					if min_weight_distance < v_t:
 						validate = False
 
 					retrain, dir_name = add_to_database(database_path, match_id, 
-							max_subject_faces, eigenimage, validate)
+							max_subject_faces, eigenimage, frameSize, validate)
 
 					found = dir_name.title()
 
