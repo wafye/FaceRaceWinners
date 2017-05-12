@@ -26,6 +26,8 @@ def haar_cascades(video,verbose=False):
 		if retrived == False:
 			print("You have reached the end of the video.")
 			break
+
+		frame = cv2.flip(frame,1)
 				
 		gray = np.uint8(cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY))
 
@@ -41,7 +43,7 @@ def haar_cascades(video,verbose=False):
 			cv2.imshow("Haar Cascade Box", faceBoxFrame)
 
 
-		k = cv2.waitKey(framerate)
+		k = cv2.waitKey(30)
 		if k == 27 or k == (65536 + 27):
 			print('Exiting...')
 			break
@@ -57,7 +59,8 @@ if __name__ == '__main__':
 
 	testVid = currentDir + '/testVideo/MOVE_Video.mp4'
 
-	capture = cv2.VideoCapture(testVid)
+	#capture = cv2.VideoCapture(testVid)
+	capture = cv2.VideoCapture(0)
 	if capture.isOpened() == False:
 		msg = "The provided video file was not opened."
 		raise ValueError(msg)

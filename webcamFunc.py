@@ -140,6 +140,9 @@ def add_to_database(path, match_id, max_subject_faces, eigenimage,
 		# print ("Var:", var)
 		dir_name = input('Enter name: ').lower()
 
+		#if dir_name == "carl":
+
+
 		if dir_name == "quit" or dir_name == "Quit" or dir_name == 'q':
 			msg = "Getting out of the face race program"
 			raise TypeError(msg)
@@ -190,7 +193,6 @@ def replaceFarthestMatch(imageDirectory, eigenimage, frameSize):
 	replacementImage[0:112,0:92,:] = badImage[:,:,:].astype(np.uint8)
 	replacementImage[0:112,92:92*2,:] = np.repeat(eigenimage[:,:,np.newaxis],3,axis=2)
 	replacementImage = cv2.resize(replacementImage, (frameSize))
-	print(frameSize)
 	cv2.putText(replacementImage, "Old", (140,480), font, 1, (0,0,255), 
 		2, cv2.LINE_AA)	
 	cv2.putText(replacementImage, "New", (450, 480), font, 1, (0,0,255),
@@ -198,7 +200,6 @@ def replaceFarthestMatch(imageDirectory, eigenimage, frameSize):
 	cv2.imshow("Replacement Window", replacementImage.astype(np.uint8))
 	cv2.waitKey(30)
 	cv2.imwrite(subject_id, eigenimage)
-
 
 	return subject_id
 
@@ -309,6 +310,7 @@ def eigenfaces_detect(database_id_list, weight_vect, weights, nf_t, order):
 		print('####                                  ####')
 		print('##########################################')
 		print('##########################################\n')
+		print("The distance away from the rest of the database images is", min_weight_distance,'\n')
 
 		match_id = None
 
@@ -358,7 +360,7 @@ def colorPresence(frame):
 	hsvFrame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 	skinMask = cv2.inRange(hsvFrame, lower, upper)
 	skinMask = cv2.morphologyEx(skinMask, cv2.MORPH_OPEN, kernel)
-	cv2.imshow("SkinMask", skinMask)
+	#cv2.imshow("SkinMask", skinMask)
 	#skinMask[skinMask==255] = 1
 	if np.sum(skinMask) > 0:
 		presence = True
@@ -370,6 +372,7 @@ if __name__ == '__main__':
 	import cv2
 	import numpy as np
 	import skimage.io
+	import time
 
 	database_path = 'face_database/'
 	# maximum number of faces to be added to the database per subject
@@ -381,11 +384,11 @@ if __name__ == '__main__':
 	cascade = cv2.CascadeClassifier(
 				'FaceRecognitionModels/haarcascade_frontalface_default.xml')
 	
-	max_subject_faces = 40
+	max_subject_faces = 15
 	# face detection threshold
 	f_t = 10000
 	# face recognition threhsold
-	nf_t = 16000
+	nf_t = 15700
 	#nf_t = 10000000000
 	v_t = 12500 #Validation Threshold
 	consecutiveThreshold = 20
@@ -422,7 +425,7 @@ if __name__ == '__main__':
 		if found is not None:
 
 			cv2.putText(frame, found.rstrip('/'), (10,30), font, 1, (0,255,0), 
-																2, cv2.LINE_AA)
+																2, cv2.LINE_AA)			
 		cv2.imshow("fame", frame)
 
 		consecutiveFrames = get_faceFrame(gray, cascade, consecutiveFrames)
@@ -446,13 +449,14 @@ if __name__ == '__main__':
 							max_subject_faces, eigenimage, frameSize, validate)
 
 					found = dir_name.title()
+					if found is None:
+						found = ''
 
 					if retrain:
 						print('\n\n\n#### RETRAINING ####\n\n\n')
 						database_images, database_id_list = read_database(database_path)
 						vect_average_face, weights, e = eigenfaces_train(database_images)
 						cv2.destroyWindow("Replacement Window")
-
 
 				consecutiveFrames = []
 
