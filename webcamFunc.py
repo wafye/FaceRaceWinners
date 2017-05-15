@@ -1,106 +1,54 @@
 """
 title::
 	Facial Detection and Recognition using Eigenfaces and Haar Cascades
-
 description::
-	An implementation of a unique facial detection and recongition algorithm
+	An implementation of a unique facial detection and recognition algorithm
 	that utalises Haar Cascades for initial positioning and detection of
 	faces, then implements eigenfaces to match them to a subject. This 
 	current version begins with an AT&T Database of eigenfaces and the default
 	Haar Frontal Face Detection Cascade Model of detection.
-
 dependencies::
 	Python 3.6 or later
 	Opencv3 or later
 	numpy + OpenCV Dependencies
 	scikit-image (aka skimage)
 	Tested and Validated on Windows 10
-
 attributes::
 	Add To Database 		- Adds a image to the database of faces
 		Path 				- Database Path Typically './face_database/'
 		match_id 			- Path to Matched Image 'face_database/*Person*/ID#.jpg'
 		validate 			- If matched images are close enough no check is required
-
 		new_path			- Directory that image was saved to
 		face_image_number	- The current image # in the directory + 1
-
 	Read_Database
 		database_path 		- Database Path Typically './face_database/'
-
 		database_id_list 	- List of all of the path name images in the database
 		database_images 	- All of the images in the database as arrays
-
 	EigenFaces_Train
 		database_images 	- List of all images in database as arrays
-
 		vect_average_face	- Flattened Version of the "Average Face"
 		weights 			- The weights of all of the eigen vectors (400, 400)
-		e					- Eigen Vectors of all the images (10304x400)
-
+		e					- Eigenvectors of all the images (10304x400)
 	EigenFaces_IsFace
-		image 				-
-		Average Face Vector -	
-		EigenFace Vector 	- 
-		EigenFace Threshold -
-
+		image 				- Detected input face image
+		Average Face Vector - Average face (in vector form) of the current database
+		EigenFace Vector 	- Vector of Eigenfaces
+		EigenFace Threshold - Threshold for Eigenfaces face detection
 	eigenfaces_detect 
-		database_id_list
-		max_subject_faces 
-		image
-		weights 
-		nf_t
-		
+		database_id_list	- List of ids in the current database
+		max_subject_faces 	- Max amount of database images per subject
+		image               - Detected face image from Eigenfacs_IsFace
+		weights 			- Vector of weights from eigenfaces algorithm
+		nf_t				- Threshold on eucldian distance for positive face match		
 	get_FaceFrame
-		Frame
-		Face Cascade
-		Consecutive Faces
-
+		Frame               - Current frame grabbed from the employed camera device
+		Face Cascade        - Face detection from face cascade algorithm
+		Consecutive Faces   - Number of consecutive frames for face detection
 author::
 	Trevor Canham, Emily Faw, Jackson Knappen, Makayla Roof, Geoffrey Sasaki
-
 copyright::
 	Copyright (C) 2017, Rochetser Institute of Technology
 """
-import tkinter
-
-class takeInput(object):
-
-	def __init__(self,requestMessage):
-		self.root = tkinter.Tk()
-		self.string = ''
-		self.frame = tkinter.Frame(self.root)
-		self.frame.pack()        
-		self.acceptInput(requestMessage)
-
-	def acceptInput(self,requestMessage):
-		r = self.frame
-
-		k = tkinter.Label(r,text=requestMessage)
-		k.pack(side='left')
-		self.e = tkinter.Entry(r,text='Name')
-		self.e.pack(side='left')
-		self.e.focus_set()
-		b = tkinter.Button(r,text='okay',command=self.gettext)
-		b.pack(side='right')
-
-	def gettext(self):
-		self.string = self.e.get()
-		self.root.destroy()
-
-	def getString(self):
-		return self.string
-
-	def waitForInput(self):
-		self.root.mainloop()
-
-def getText(requestMessage):
-	msgBox = takeInput(requestMessage)
-	#loop until the user makes a decision and the window is destroyed
-	msgBox.waitForInput()
-	return msgBox.getString()
-# var = getText('enter your name')
-# print ("Var:", var)
 
 def add_to_database(path, match_id, max_subject_faces, eigenimage, 
 												frameSize, validate=True):
@@ -466,6 +414,3 @@ if __name__ == '__main__':
 
 	cap.release()
 	cv2.destroyAllWindows()
-
-
-
